@@ -9,7 +9,7 @@ abstract class BlockBase {
     public $type;
     public $class;
 
-    public $preserve = ['class' => 'className', 'style' => 'style'];
+    public $preserve = ['class' => 'className', 'style' => 'style', 'id' => ''];
 
     public function __construct($attributes = []) {
         $this->attributes = $attributes;
@@ -36,6 +36,9 @@ abstract class BlockBase {
 
         foreach ($item->getAllAttributes() ?? [] as $name => $attribute) {
             if(isset($this->preserve[$name])) {
+                if (empty($this->preserve[$name])) {
+                    continue;
+                }
                 $this->attributes[$this->preserve[$name]] = $attribute;
                 continue;
             }

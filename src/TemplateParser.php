@@ -4,9 +4,11 @@ namespace WordPressBlockTheme;
 
 use voku\helper\HtmlDomParser;
 use voku\helper\SimpleHtmlDomInterface;
+use WordPressBlockTheme\BlockType\EmbedBlock;
 use WordPressBlockTheme\BlockType\GroupBlock;
 use WordPressBlockTheme\BlockType\HeadingBlock;
 use WordPressBlockTheme\BlockType\ImageBlock;
+use WordPressBlockTheme\BlockType\ListBlock;
 use WordPressBlockTheme\BlockType\ParagraphBlock;
 
 class TemplateParser {
@@ -24,7 +26,7 @@ class TemplateParser {
     public static $tag_mapping = [];
 
     public function __construct($source) {
-        $this->html = file_get_html($source);
+        $this->html = $this->parseSource($source);
         static::$tag_mapping['p'] = new ParagraphBlock();
         static::$tag_mapping['h1'] = new HeadingBlock(['level' => 1]);
         static::$tag_mapping['h2'] = new HeadingBlock(['level' => 2]);
@@ -34,7 +36,14 @@ class TemplateParser {
         static::$tag_mapping['h6'] = new HeadingBlock(['level' => 6]);
         static::$tag_mapping['div'] =  new GroupBlock();
         static::$tag_mapping['header'] = new GroupBlock(['tagName' => 'header']);
+        static::$tag_mapping['span'] = new GroupBlock(['tagName' => 'span']);
         static::$tag_mapping['img'] = new ImageBlock();
+        static::$tag_mapping['ul'] = new ListBlock();
+        static::$tag_mapping['iframe'] = new EmbedBlock();
+    }
+
+    public function parseSource($source) {
+        return $source instanceof \simple_html_dom || $source instanceof \simple_html_dom_node ? $source : file_get_html($source);
     }
 
     public function setContent($selector) {
@@ -49,8 +58,19 @@ class TemplateParser {
         $this->explore($tag);
     }
 
+    public function output() {
+        $wrapper = $this->content ?? $this->html->find('body', 0) ?? $this->html;
+        $this->convert($wrapper);
+        if ($this->content) {
+            return $this->content->innertext;
+        }
+
+        return (string) $this->html;
+    }
+
     public function generate($output) {
-        $this->convert($this->content ?? $this->html->find('body', 0));
+        $wrapper = $this->content ?? $this->html->find('body', 0);
+        $this->convert($wrapper);
         if ($this->content) {
             file_put_contents($output, $this->content->innertext);
             return;
